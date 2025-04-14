@@ -19,3 +19,4 @@ APScheduler
 pytz
 requests
 rapidfuzz
+dotenv
