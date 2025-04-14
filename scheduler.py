@@ -11,7 +11,7 @@ if __name__ == "__main__":
     scheduler = BlockingScheduler(timezone=eastern)
     
     # Schedule to run every Monday at midnight (00:00 ET)
-    scheduler.add_job(run_pipeline, 'cron', day_of_week='mon', hour=0, minute=0)
+    scheduler.add_job(run_pipeline, 'cron', day_of_week='mon', hour=1, minute=13)
     
     logging.info("Scheduler started; pipeline will run every Monday at midnight ET.")
     try:

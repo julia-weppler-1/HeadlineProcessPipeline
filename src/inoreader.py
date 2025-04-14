@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 CLIENT_ID = os.getenv("inoreader_client_id")
 APP_KEY = os.getenv("inoreader_key")
 
+
 def fetch_inoreader_articles(folder_name, access_token):
     """
     Fetch all articles from a given folder (label) that were published in the past week.

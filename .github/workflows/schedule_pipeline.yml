@@ -4,7 +4,7 @@ on:
   schedule:
     # This cron expression schedules the workflow for Monday at 05:47 UTC,
     # which corresponds to 00:47 EST (UTC-5).
-    - cron: '58 5 * * 1'
+    - cron: '0 0 * * MON'
   # Optionally, you can allow manual triggering:
   workflow_dispatch:
 
