@@ -6,12 +6,11 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # Import functions from your modules
-from src.ino_oauth import automate_oauth_flow
-from src.ino_token import exchange_code_for_token
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
 from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details
 from src.results import output_results_excel
 from src.questions import STEEL_NO, IRON_NO, CEMENT_NO, CEMENT_TECH, STEEL_IRON_TECH
+from src.ino_client_login import client_login
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -19,30 +18,16 @@ logger = logging.getLogger(__name__)
 
 def obtain_inoreader_token():
     """
-    Returns a valid Inoreader access token.
-    If one isn't set in the environment, it automates the OAuth flow to obtain one.
+    Returns a valid Inoreader access token using the legacy ClientLogin method.
     """
-    auth_code_tuple = automate_oauth_flow()
-    if not auth_code_tuple:
+    token = client_login()  # Directly call client_login to get the Auth token.
+    if token:
+        os.environ["INOREADER_ACCESS_TOKEN"] = token
+        return token
+    else:
+        logger.error("Failed to obtain a valid Inoreader auth token via ClientLogin.")
         return None
 
-    auth_code, returned_state = auth_code_tuple
-
-    token_data = exchange_code_for_token(auth_code)
-    if not token_data:
-        logger.error("Failed to exchange authorization code for tokens.")
-        return None
-
-    access_token = token_data.get("access_token")
-    refresh_token = token_data.get("refresh_token")
-    if not access_token:
-        logger.error("No access token received from token exchange.")
-        return None
-
-    # For testing purposes, we store the tokens in environment variables.
-    os.environ["INOREADER_ACCESS_TOKEN"] = access_token
-    os.environ["INOREADER_REFRESH_TOKEN"] = refresh_token
-    return access_token
 
 def run_pipeline():
     logger.info("Pipeline started.")

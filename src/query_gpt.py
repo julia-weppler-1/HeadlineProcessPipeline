@@ -146,7 +146,7 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
             "- country: the country where the project is located\n"
             f"- project_status: one of the following statuses: {', '.join(PROJECT_STATUS)}\n\n"
             "Return your answer as a JSON object with keys: 'company', 'projects mentioned', 'partners', 'continent', 'country', 'project_status'. "
-            "For any missing detail, return an empty string. If the article is irrelevant, include a key 'irrelevant' with value true.\n\n"
+            "For any missing detail, return an empty string.\n\n"
             "Article text:\n\"\"\"\n" + article_text + "\n\"\"\""
         )
         
