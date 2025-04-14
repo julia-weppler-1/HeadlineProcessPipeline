@@ -4,14 +4,14 @@ import logging
 import traceback
 import pandas as pd
 from dotenv import load_dotenv
-
+import datetime
 # Import functions from your modules
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
 from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details
 from src.results import output_results_excel
 from src.questions import STEEL_NO, IRON_NO, CEMENT_NO, CEMENT_TECH, STEEL_IRON_TECH
 from src.ino_client_login import client_login
-
+from src.email_results import send_email_with_attachment
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -115,7 +115,19 @@ def run_pipeline():
             output_fname = os.path.join(os.getcwd(), f"results_{folder}.xlsx")
             # Save the DataFrame to an Excel file using both lists.
             output_results_excel(folder_df, irrelevant_articles, output_fname)
-        
+            subject = f"Inoreader Pipeline Results for {folder} - {datetime.now().strftime('%Y-%m-%d')}"
+            body = f"Please find attached the results for {folder}."
+            sender = os.getenv("SMTP_USERNAME")  # In our case, this is julia.weppler@sei.org
+            receiver = "julia.weppler@sei.org"
+            smtp_server = os.getenv("SMTP_SERVER")
+            smtp_port = int(os.getenv("SMTP_PORT", "465"))
+            smtp_username = os.getenv("SMTP_USERNAME")
+            smtp_password = os.getenv("SMTP_PASSWORD")
+            
+            send_email_with_attachment(subject, body, output_fname,
+                                       sender, receiver,
+                                       smtp_server, smtp_port,
+                                       smtp_username, smtp_password)
         logger.info("Pipeline completed successfully.")
 
     except Exception as e:

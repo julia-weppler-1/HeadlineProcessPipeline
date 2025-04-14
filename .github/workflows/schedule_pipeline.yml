@@ -1,0 +1,31 @@
+name: Run Pipeline on Schedule
+
+on:
+  schedule:
+    # This cron expression schedules the workflow for Monday at 05:47 UTC,
+    # which corresponds to 00:47 EST (UTC-5).
+    - cron: '58 5 * * 1'
+  # Optionally, you can allow manual triggering:
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: |
+          python main.py
