@@ -21,4 +21,3 @@ requests
 rapidfuzz
 dotenv
 datetime
-io
