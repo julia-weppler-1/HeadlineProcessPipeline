@@ -36,7 +36,7 @@ def obtain_inoreader_token():
 
     # 3) Call client_login with those parameters
     try:
-        token = client_login(username, password, token_url)
+        token = client_login()
     except Exception:
         logger.exception("client_login() threw an unexpected error")
         return None
