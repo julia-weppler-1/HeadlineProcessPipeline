@@ -9,6 +9,7 @@ on:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
+    environment: LeadIT
     env:
       AUTHORIZATION_URL: ${{ secrets.AUTHORIZATION_URL }}
       INOREADER_CLIENT_ID: ${{ secrets.INOREADER_CLIENT_ID }}
