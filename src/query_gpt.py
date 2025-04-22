@@ -33,6 +33,10 @@ def chat_gpt_query(gpt_client, gpt_model, msgs):
     response = gpt_client.chat.completions.create(
         model=gpt_model,
         temperature=0,
+        top_p=1,          # don’t do nucleus sampling
+        frequency_penalty=0,
+        seed=999,
+        presence_penalty=0,
         response_format={"type": "json_object"},
         messages=msgs,
     )
@@ -76,7 +80,7 @@ def query_gpt_for_relevance_iterative(df, target_questions, run_on_full_text, gp
             if clean_answer not in ["yes", "no"]:
                 # Log a warning and default to 'no' so that the article is not considered irrelevant
                 print(f"Warning: Unrecognized answer format '{clean_answer}' from GPT. Defaulting to 'no'.")
-                clean_answer = "no"
+                clean_answer = "yes"
             if clean_answer == "yes":
                 is_irrelevant = True
                 print("Skipping article due to query: ", query)

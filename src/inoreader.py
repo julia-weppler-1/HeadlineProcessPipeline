@@ -5,6 +5,7 @@ import logging
 from src.read_json import parse_inoreader_feed
 from playwright.sync_api import sync_playwright
 import os
+import datetime
 from dotenv import load_dotenv
 load_dotenv() 
 import requests
@@ -31,9 +32,8 @@ def fetch_inoreader_articles(folder_name, access_token):
     one_week_ago = int(time.time()) - 7 * 24 * 60 * 60
     
     articles = []
-    n = 1
+    n = 100
     continuation = None
-    
     # Build the stream URL.
     stream_id = urllib.parse.quote(f"user/-/label/{folder_name}", safe='')
     base_url = f"https://www.inoreader.com/reader/api/0/stream/contents/{stream_id}"
@@ -43,33 +43,33 @@ def fetch_inoreader_articles(folder_name, access_token):
         "appKey": APP_KEY
     }
     # Loop until no continuation token is returned.
-    # while True:
+    while True:
         # Set parameters: using r="o" (oldest first) and ot with the start time.
-    params = {
-        "n": n,
-        "r": "o",
-        "ot": one_week_ago,
-        "output": "json"  # explicitly request JSON, though this endpoint returns JSON by default.
-    }
-    if continuation:
-        params["c"] = continuation
-    
-    response = requests.get(base_url, headers=headers, params=params)
-    if response.status_code == 200:
-        json_data = response.json()
-        items = json_data.get("items", [])
-        if not items:
-            logger.info("No more items returned; stopping pagination.")
-            # break
-        articles.extend(items)
+        params = {
+                "n": n,
+                "r": "n",  # newest first: 'ot' now acts as the end time (cutoff).
+                "ot": one_week_ago,
+                "output": "json"
+            }
+        if continuation:
+            params["c"] = continuation
         
-        continuation = json_data.get("continuation")
-        if not continuation:
-            logger.info("No continuation token found; reached end of stream.")
-            # break
-    else:
-        logger.error("Failed to fetch articles: %s", response.text)
-        # break
+        response = requests.get(base_url, headers=headers, params=params)
+        if response.status_code == 200:
+            json_data = response.json()
+            items = json_data.get("items", [])
+            if not items:
+                logger.info("No more items returned; stopping pagination.")
+                # break
+            articles.extend(items)
+            
+            continuation = json_data.get("continuation")
+            if not continuation:
+                logger.info("No continuation token found; reached end of stream.")
+                break
+        else:
+            logger.error("Failed to fetch articles: %s", response.text)
+            break
             
     logger.info("Total items fetched: %d", len(articles))
     return articles

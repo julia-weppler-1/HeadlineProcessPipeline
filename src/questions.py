@@ -23,19 +23,28 @@ STEEL_YES = [
 ]
 
 STEEL_NO = [
-    "Is the headline mentioning green steel market growth or shrinkage, or about commodity prices?",
-    "Is the headline mentioning market intelligence?",
-    "Is the headline mentioning announcing a conference or forum, or related?",
-    "Is the headline mentioning sports?",
-    "Is this headline about an award that a company has been granted?",
-    "Is the headline mentioning new leadership in steel producing company?",
-    "Is the headline mentioning net profit or profit results of a steel producing company?",
-    "Is the headline about the release of a company report or financial year results?"
-
+    "Is this headline about an announcement for a conference, forum, or event?",
+    "Is this headline about sports, movies, fashion (like watches), food, or pop culture?",
+    "Is the headline about new leadership in a company or a merge, acquisition, or consolidation? If it is about a collaboration, say no.",
+    "Does the headline explicitly mention iron or steel consumption? If it is about a supply agreement or innovation to manufacturing green steel, say no.",
+    "Is this headline about net profit or profit results of a company? Is the headline about total production?",
+    "Is this headline about production capacity or productions goals?",
+    "Is this headline about inflation, tariffs, costs, imports, exports or any other transactions? If it is explictly about a supply agreement, say no.",
+    "Is this headline about a metal product unrelated to steel, such as coal?",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
+    "Is this headline about politics, national or international policy, trade, or warfare? If it is about a developing steel plant or technology, say no.",
+    "Is this headline about an award or prize? If it is about an investment or grant for steel, say no.",
+    "Is this headline about deliveries or shipping? Is this headline about warnings or threats? If it is about a collaboration for green hydrogen, renovations, reducing steel emissions, or a similar green-initiative, say no.",
+    "Is this headline a broad review or opinion piece?",
+    "Is this headline about a country or group's broad goals for CO2 emission cuts or product sourcing?",
+    "Is this headline about a mine? If it is about a collaboration for green hydrogen, renovations, reducing steel emissions, or a similar green-initiative, say no.",
+    "Is the headline about the release of a company report or the financial/fiscal year (FY)?",
+    "Is the headline about the ability to produce bars, or the amount of steel bars that can be produced?",
+    "Is the headline completely unrealted to projects or agreements in manufacturing, steel production, or technologies for steel?"
 ]
 
 IRON_YES = [
-    # "Is the headline related to iron for green steel?",
+    "Is the headline related to iron for green steel?",
     "Does the headline refer to iron reduction?",
     "Does the headline menmention the name of an iron mining company?",
     "Does the headline mention the name of a technology provider for iron reduction?",
@@ -64,32 +73,43 @@ IRON_YES = [
 
 IRON_NO = [
     "Is this headline about an announcement for a conference or forum, or related event?",
-    "Does this headline indicate the article is about sports or movies?",
-    "Does this headline mention new leadership in a company?",
+    "Is this headline about sports, movies, fashion (like watches), food, or pop culture?",
+    "Is the headline about new leadership in a company or a merge, acquisition, or consolidation? If it is about a collaboration, say no.",
+    "Is this headline about iron or steel consumption? If it is explictly about a supply agreement, say no."
     "Is this headline about net profit or profit results of a company?",
-    "Is this headline about a mining product unrelated to iron?",
-    "Is this headline about stock market performances or commodity prices?",
-    "Is this headline about politics, trade, or warfare?",
-    "Is this headline about an award that a company has been granted?",
-    "Is this headline about a mine that is opening?"
-    "Is the headline about the release of a company report or financial year results?"
-
+    "Is this headline about production capacity or productions goals?",
+    "Is this headline about inflation, tariffs, imports, exports or any other transactions? If it is explictly about a supply agreement, say no.",
+    "Is this headline about a mining product unrelated to iron, such as coal?",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
+    "Is this headline about politics, national or international policy, trade, or warfare?",
+    "Is this headline about an award or prize? If it is about an investment or grant for iron, say no.",
+    "Is this headline about deliveries or shipping? Is this headline about warnings or threats?",
+    "Is this headline an opinion piece? If it relates to green iron/steel/metal or iron/steel/metal production, including green hydrogen, so no.",
+    "Is this headline about a mine that has already been in operation? If it is about a collaboration for green hydrogen, renovations, reducing iron emissions, or a similar green-initiative, say no.",
+    "Is the headline about the release of a company report or financial/fiscal year (FY) results?",
+    "Is this headline about a country or group's broad goals for CO2 emission cuts or product sourcing?",
+    "Is the headline completely unrealted to projects or agreements in iron production, or technologies for iron?"
 ]
 
 
 CEMENT_NO = [
     "Is this headline about an announcement for a conference or forum, or related event?",
-    "Does this headline indicate the article is about sports or movies?",
-    "Does this headline mention new leadership in a company?",
+    "Is this headline about sports, movies, fashion (like watches), food, or pop culture?",
+    "Is the headline about new leadership in a company or a merge, acquisition, or consolidation? If it is about a collaboration, say no.",
     "Is this headline about net profit or profit results of a company?",
-    "Is this headline about an award?",
-    "Is this headline about stock market performances, dividends, financial results, commodity prices?",
-    "Is this headline about the cement market or the general cement industry?",
-    "Is this headline about politics, policy, trade, or warfare?",
-    "Is this headline about the acquisition of a cement company?",
+    "Is this headline about production capacity or productions goals?",
     "Is this headline about workloads, operating margins, exports, bonds, or dispatches?",
-    "Is this headline about the construction sector or construction?",
-    "Is the headline about the release of a company report or financial results?"
+    "Is this headline about the construction sector or construction, with no mention of cement innovations or projects?",
+    "Does this headline explicitly mention consumption? If it is explictly about a supply agreement, say no.",
+    "Is this headline about inflation, tariffs, imports, exports or any other transactions? If it is explictly about a supply agreement, say no.",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
+    "Is this headline about politics, national or international policy, trade, or warfare?",
+    "Is this headline about an award or prize? If it is about an investment or grant for cement, say no. If it is about a certification or permission, say no.",
+    "Is this headline about deliveries or shipping? Is this headline about warnings or threats?",
+    "Is this headline an opinion piece? If it relates to green cement, green cement production, carbon capture/usage, or renewable energy sources, say no.",
+    "Is the headline about the release of a company report or financial/fiscal year (FY) results?",
+    "Is the headline completely unrealted to cement, facilitites/plants, CO2 reuse, or technologies for cement?",
+    "Is this headline about a country or group's broad goals for CO2 emission cuts or product sourcing?"
 ]
 
 STEEL_IRON_TECH = ["H-DRI (hydrogen direct reduced iron or sponge iron)", "CCS for BF-BOF (carbon capture storage for blast furnace)", "H-DRI + EAF (H-DRI and electric arc furnace)", "CCS for power station", "H-DRI + ESF (H-DRI and electric smelting furnace)", "CCUS for BF-BOF (carbon capture and utilization and storage for BF)",

@@ -5,13 +5,10 @@ documents with relevant information and metrics.
 """
 
 from datetime import datetime
-from docx.shared import Pt
 import os
 import io
-
 import pandas as pd
 from src.validation import get_check_results_flag
-import datetime
 from src.onedrive import get_graph_api_token, upload_file_to_onedrive
 def get_output_fname(path_fxn, filetype="xlsx"):
     return path_fxn(f"results.{filetype}")
@@ -179,17 +176,31 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
         })
     df_all = pd.DataFrame(all_articles, columns=["title", "url", "Discarded"])
     # Write the DataFrames to separate sheets in an Excel workbook.
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+    # buffer = io.BytesIO()
+    # with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+    #     df_stage1.to_excel(writer, sheet_name="Relevant Stage 1", index=False)
+    #     df_stage2.to_excel(writer, sheet_name="Relevant Stage 2", index=False)
+    #     df_irrelevant.to_excel(writer, sheet_name="Irrelevant", index=False)
+    #     df_all.to_excel(writer, sheet_name="All Articles", index=False)
+    # buffer.seek(0)
+    # file_bytes = buffer.getvalue()
+    # output_fname = output_path
+    # graph_access_token = get_graph_api_token(tenant_id, client_id, client_secret)
+    # if not graph_access_token:
+    #     print("Could not obtain Graph API token.")
+    #     return
+    # upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, output_fname, graph_access_token)
+    # buffer = io.BytesIO()
+    
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         df_stage1.to_excel(writer, sheet_name="Relevant Stage 1", index=False)
         df_stage2.to_excel(writer, sheet_name="Relevant Stage 2", index=False)
         df_irrelevant.to_excel(writer, sheet_name="Irrelevant", index=False)
         df_all.to_excel(writer, sheet_name="All Articles", index=False)
-    buffer.seek(0)
-    file_bytes = buffer.getvalue()
-    output_fname = output_path
-    graph_access_token = get_graph_api_token(tenant_id, client_id, client_secret)
-    if not graph_access_token:
-        print("Could not obtain Graph API token.")
-        return
-    upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, output_fname, graph_access_token)
+    # buffer.seek(0)
+    # file_bytes = buffer.getvalue()
+    # graph_access_token = get_graph_api_token(tenant_id, client_id, client_secret)
+    # if not graph_access_token:
+    #     print("Could not obtain Graph API token.")
+    #     return
+    # upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, output_fname, graph_access_token)
