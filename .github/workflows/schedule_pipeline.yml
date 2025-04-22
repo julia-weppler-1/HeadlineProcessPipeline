@@ -1,12 +1,9 @@
-name: Run Pipeline on Schedule
+name: Run Pipeline Immediately
 
 on:
-  schedule:
-    # This cron expression schedules the workflow for Monday at 05:47 UTC,
-    # which corresponds to 00:47 EST (UTC-5).
-    - cron: '0 0 * * MON'
-  # Optionally, you can allow manual triggering:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   run-pipeline:
