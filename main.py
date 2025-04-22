@@ -19,13 +19,35 @@ def obtain_inoreader_token():
     """
     Returns a valid Inoreader access token using the legacy ClientLogin method.
     """
-    token = client_login()  # Directly call client_login to get the Auth token.
+    # 1) Pull creds out of the environment
+    username  = os.getenv("USERNAME")
+    password  = os.getenv("PASSWORD")
+    token_url = os.getenv("TOKEN_URL")
+
+    # 2) Fail early if any are missing
+    missing = [var for var,val in [
+        ("USERNAME", username),
+        ("PASSWORD", bool(password)),   # we don’t print the actual password
+        ("TOKEN_URL", token_url)
+    ] if not val]
+    if missing:
+        logger.error("Missing env var(s) for ClientLogin: %s", missing)
+        return None
+
+    # 3) Call client_login with those parameters
+    try:
+        token = client_login(username, password, token_url)
+    except Exception:
+        logger.exception("client_login() threw an unexpected error")
+        return None
+
     if token:
         os.environ["INOREADER_ACCESS_TOKEN"] = token
         return token
-    else:
-        logger.error("Failed to obtain a valid Inoreader auth token via ClientLogin.")
-        return None
+
+    logger.error("ClientLogin returned no token")
+    return None
+
 
 
 def run_pipeline():
