@@ -134,7 +134,7 @@ def run_pipeline():
             print(folder_df)
             time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             # Build an output filename for this folder.
-            output_fname = os.path.join(os.getcwd(),f"results_{folder}_{time}.xlsx")
+            output_fname = os.path.join(f"results_{folder}_{time}.xlsx")
             # Save the DataFrame to an Excel file using both lists.
             output_results_excel(folder_df, irrelevant_articles, output_fname)
         logger.info("Pipeline completed successfully.")
