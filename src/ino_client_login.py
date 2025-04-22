@@ -17,8 +17,8 @@ def client_login():
         auth_token (str): The authentication token for API requests.
     """
     # Read credentials from the environment
-    USERNAME = os.getenv("username")
-    PASSWORD = os.getenv("password")
+    USERNAME = os.getenv("USERNAME")
+    PASSWORD = os.getenv("PASSWORD")
     CLIENT_LOGIN_URL = "https://www.inoreader.com/accounts/ClientLogin"
     
     # Set up the required form data

@@ -33,11 +33,7 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
       - 'All Articles': A combined list of all articles (from irrelevant, Stage 1, and Stage 2) showing
            the article titles, URLs, and if they were discarded before stage 1 or stage 2.
     """
-    tenant_id = os.getenv("od_tenantid")
-    client_id = os.getenv("od_client_id")
-    client_secret = os.getenv("od_client_value")
-    drive_id = os.getenv("od_drive_id")
-    parent_item_id = os.getenv("od_parent_item")
+
     # Convert inputs to list of dictionaries if they are DataFrames.
     if isinstance(relevant_articles, pd.DataFrame):
         print("relevant is df")

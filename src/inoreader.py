@@ -12,8 +12,8 @@ import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-CLIENT_ID = os.getenv("inoreader_client_id")
-APP_KEY = os.getenv("inoreader_key")
+CLIENT_ID = os.getenv("INOREADER_CLIENT_ID")
+APP_KEY = os.getenv("INOREADER_KEY")
 
 
 def fetch_inoreader_articles(folder_name, access_token):

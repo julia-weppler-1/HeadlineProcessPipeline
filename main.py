@@ -32,7 +32,7 @@ def run_pipeline():
     logger.info("Pipeline started.")
     try:
         # Step 1: Get a valid token (or perform OAuth flow if needed).
-        openai_key = os.getenv("openai_apikey_leadit")
+        openai_key = os.getenv("OPENAI_APIKEY")
         access_token = obtain_inoreader_token()
         if not access_token:
             logger.error("Could not obtain a valid Inoreader access token. Exiting pipeline.")

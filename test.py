@@ -63,9 +63,9 @@ def upload_file_to_onedrive(file_path, drive_id, parent_item_id, file_name, acce
 
 def main():
     # Get credentials from environment variables.
-    tenant_id = os.getenv("od_tenantid")
-    client_id = os.getenv("od_client_id")
-    client_secret = os.getenv("od_client_value")
+    tenant_id = os.getenv("OD_TENANT_ID")
+    client_id = os.getenv("OD_CLIENT_ID")
+    client_secret = os.getenv("OD_CLIENT_VALUE")
     if not (tenant_id and client_id and client_secret):
         print("Missing one or more Azure AD credential environment variables.")
         return

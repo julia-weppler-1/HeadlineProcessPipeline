@@ -4,27 +4,29 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
     env:
-      authorization_url: ${{ secrets.AUTHORIZATION_URL }}
-      inoreader_client_id: ${{ secrets.INOREADER_CLIENT_ID }}
-      inoreader_key:       ${{ secrets.INOREADER_KEY }}
-      oauth_client_id:     ${{ secrets.OAUTH_CLIENT_ID }}
-      od_authority:        ${{ secrets.OD_AUTHORITY }}
-      od_client_id:        ${{ secrets.OD_CLIENT_ID }}
-      od_client_secret:    ${{ secrets.OD_CLIENT_SECRET }}
-      od_drive_id:         ${{ secrets.OD_DRIVE_ID }}
-      od_parent_item:      ${{ secrets.OD_PARENT_ITEM }}
-      od_resource:         ${{ secrets.OD_RESOURCE }}
-      od_scopes:           ${{ secrets.OD_SCOPES }}
-      od_tenant_id:        ${{ secrets.OD_TENANT_ID }}
-      openai_apikey:       ${{ secrets.OPENAI_APIKEY }}
-      username:            ${{ secrets.USERNAME }}
-      password:            ${{ secrets.PASSWORD }}
-      token_url:           ${{ secrets.TOKEN_URL }}
+      AUTHORIZATION_URL: ${{ secrets.AUTHORIZATION_URL }}
+      INOREADER_CLIENT_ID: ${{ secrets.INOREADER_CLIENT_ID }}
+      INOREADER_KEY:       ${{ secrets.INOREADER_KEY }}
+      OAUTH_CLIENT_ID:     ${{ secrets.OAUTH_CLIENT_ID }}
+      OD_AUTHORITY:        ${{ secrets.OD_AUTHORITY }}
+      OD_CLIENT_ID:        ${{ secrets.OD_CLIENT_ID }}
+      OD_CLIENT_SECRET:    ${{ secrets.OD_CLIENT_SECRET }}
+      OD_CLIENT_VALUE:     ${{ secrets.OD_CLIENT_VALUE }}
+      OD_DRIVE_ID:         ${{ secrets.OD_DRIVE_ID }}
+      OD_PARENT_ITEM:      ${{ secrets.OD_PARENT_ITEM }}
+      OD_RESOURCE:         ${{ secrets.OD_RESOURCE }}
+      OD_SCOPES:           ${{ secrets.OD_SCOPES }}
+      OD_TENANT_ID:        ${{ secrets.OD_TENANT_ID }}
+      OPENAI_APIKEY:       ${{ secrets.OPENAI_APIKEY }}
+      USERNAME:            ${{ secrets.USERNAME }}
+      PASSWORD:            ${{ secrets.PASSWORD }}
+      TOKEN_URL:           ${{ secrets.TOKEN_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
