@@ -22,7 +22,7 @@ def obtain_inoreader_token():
     # 1) Pull creds out of the environment
     username  = os.getenv("USERNAME")
     password  = os.getenv("PASSWORD")
-    token_url = os.getenv("TOKEN_URL")
+    token_url = "https://www.inoreader.com/oauth2/token"
 
     # 2) Fail early if any are missing
     missing = [var for var,val in [
