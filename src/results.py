@@ -34,10 +34,10 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
            the article titles, URLs, and if they were discarded before stage 1 or stage 2.
     """
     tenant_id = os.getenv("OD_TENANT_ID")
-    client_id = os.getenv("od_client_id")
-    client_secret = os.getenv("od_client_value")
-    drive_id = os.getenv("od_drive_id")
-    parent_item_id = os.getenv("od_parent_item")
+    client_id = os.getenv("OD_CLIENT_ID")
+    client_secret = os.getenv("OD_CLIENT_VALUE")
+    drive_id = os.getenv("OD_DRIVE_ID")
+    parent_item_id = os.getenv("OD_PARENT_ITEM")
     # Convert inputs to list of dictionaries if they are DataFrames.
     if isinstance(relevant_articles, pd.DataFrame):
         print("relevant is df")
