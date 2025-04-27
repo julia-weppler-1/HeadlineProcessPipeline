@@ -10,9 +10,15 @@ import io
 import pandas as pd
 from src.validation import get_check_results_flag
 from src.onedrive import get_graph_api_token, upload_file_to_onedrive
-def get_output_fname(path_fxn, filetype="xlsx"):
-    return path_fxn(f"results.{filetype}")
-
+def get_output_fname(folder, filetype="xlsx"):
+    """
+    Builds a filename of the form:
+        results_{folder}_{YYYYMMDD_HHMMSS}.xlsx
+    and then passes it through `path_fxn` (e.g. to prepend a directory).
+    """
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{folder}/results_{ts}.{filetype}"
+    return filename
 def output_metrics(doc, num_docs, t, num_pages, failed_pdfs):
     doc.add_heading(
         f"{num_docs} documents ({num_pages} total pages) processed in {t:.2f} seconds",

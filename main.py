@@ -8,7 +8,7 @@ import datetime
 # Import functions from your modules
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
 from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details
-from src.results import output_results_excel
+from src.results import output_results_excel, get_output_fname
 from src.questions import STEEL_NO, IRON_NO, CEMENT_NO, CEMENT_TECH, STEEL_IRON_TECH
 from src.ino_client_login import client_login
 load_dotenv()
@@ -131,10 +131,11 @@ def run_pipeline():
 
             # Convert relevant articles to DataFrame.
             folder_df = pd.DataFrame(relevant_articles)
-            print(folder_df)
-            time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             # Build an output filename for this folder.
-            output_fname = os.path.join(f"results_{folder}_{time}.xlsx")
+            output_fname = get_output_fname(
+                folder,
+                filetype="xlsx"
+            )
             # Save the DataFrame to an Excel file using both lists.
             output_results_excel(folder_df, irrelevant_articles, output_fname)
         logger.info("Pipeline completed successfully.")
