@@ -16,7 +16,7 @@ def get_output_fname(folder, filetype="xlsx"):
         results_{folder}_{YYYYMMDD_HHMMSS}.xlsx
     and then passes it through `path_fxn` (e.g. to prepend a directory).
     """
-    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{folder}/results_{ts}.{filetype}"
     return filename
 def output_metrics(doc, num_docs, t, num_pages, failed_pdfs):
