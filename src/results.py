@@ -10,6 +10,18 @@ import io
 import pandas as pd
 from src.validation import get_check_results_flag
 from src.onedrive import get_graph_api_token, upload_file_to_onedrive
+
+def _safe_text(x):
+    if x is None:
+        return ""
+    try:
+        import pandas as pd
+        if pd.isna(x):
+            return ""
+    except Exception:
+        pass
+    return str(x).strip()
+
 def get_output_fname(folder, filetype="xlsx"):
     """
     Builds a filename of the form:
@@ -90,7 +102,9 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
     stage1_articles = []  # Articles with insufficient details (did not reach Stage 2).
     stage2_articles = []  # Articles with sufficient details.
     for article in filtered_relevant_articles:
-        if article.get("company", "").strip() and article.get("project_name", "").strip():
+        has_company = _safe_text(article.get("company"))
+        has_project = _safe_text(article.get("project_name"))
+        if has_company and has_project:
             stage2_articles.append(article)
         else:
             stage1_articles.append(article)
@@ -105,7 +119,7 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
         # Core details.
         row_data["Project name"] = article.get("project_name", "")
         row_data["Project scale"] = article.get("scale", "")
-        row_data["Year to be online"] = article.get("timeline", "")
+        row_data["Planned commissioning year"] = article.get("timeline", "")
         row_data["Technology to be used"] = article.get("technology", "")
         # Additional details.
         row_data["Company"] = article.get("company", "")
