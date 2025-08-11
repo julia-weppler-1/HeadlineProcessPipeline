@@ -140,9 +140,18 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
     all_articles = []
     for article in stage1_articles:
         discarded = "Discarded before Stage 2"
-        if article.get("discard_reason"):
+        reason = article.get("discard_reason", None)
+
+        # Make NaN/NA/None safe
+        try:
+            has_reason = pd.notna(reason) and str(reason).strip() != ""
+        except Exception:
+            has_reason = bool(reason)
+
+        if has_reason:
             print("yup")
-            discarded += f" ({article['discard_reason']})"
+            discarded += f" ({str(reason).strip()})"
+
         all_articles.append({
             "title": article.get("title", ""),
             "url": article.get("url", ""),
