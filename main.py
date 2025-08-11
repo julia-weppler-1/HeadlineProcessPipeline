@@ -121,7 +121,7 @@ def run_pipeline():
                         # Intermediate gate: is it truly a project/plant/demo? (JSON yes/no)
                         project_query = (
                             f"Based on the article below, is this about a project, plant, or demonstration in {domain}?"
-                            "Does it mention a project, plant, or demonstration in green steel? This can include funding or contract/partnership updates."
+                            f"Does it mention a project, plant, or demonstration in green {domain}? This can include funding or contract/partnership updates."
                             "and does it include some details about that project? "
                             "Answer ONLY as JSON with exactly one key “answer” whose value is “yes” or “no”.\n\n"
                             "Article text:\n\"\"\"\n" + full_text + "\n\"\"\""
@@ -144,7 +144,7 @@ def run_pipeline():
                         else:
                             details = {}
                             if discard_reason is None:
-                                discard_reason = "This article did not seem to be about a green steel project."
+                                discard_reason = f"This article did not seem to be about a green {domain} project."
 
                         article_info = {
                             "title": article_row["title"],
