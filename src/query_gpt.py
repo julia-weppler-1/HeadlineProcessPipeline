@@ -5,11 +5,10 @@ import string
 import json
 from src.questions import PROJECT_STATUS
 
-
 def new_openai_session(openai_apikey):
     os.environ["OPENAI_API_KEY"] = openai_apikey
     client = OpenAI()
-    gpt_model = "gpt-4o" 
+    gpt_model = "gpt-4.1" 
     max_num_chars = 10
     return client, gpt_model, max_num_chars
 
@@ -33,7 +32,7 @@ def chat_gpt_query(gpt_client, gpt_model, msgs):
     response = gpt_client.chat.completions.create(
         model=gpt_model,
         temperature=0,
-        top_p=1,          # don’t do nucleus sampling
+        top_p=1,      
         frequency_penalty=0,
         seed=999,
         presence_penalty=0,
@@ -78,7 +77,6 @@ def query_gpt_for_relevance_iterative(df, target_questions, run_on_full_text, gp
             # Clean up the response.
             clean_answer = raw_answer.strip().lower()
             if clean_answer not in ["yes", "no"]:
-                # Log a warning and default to 'no' so that the article is not considered irrelevant
                 print(f"Warning: Unrecognized answer format '{clean_answer}' from GPT. Defaulting to 'no'.")
                 clean_answer = "yes"
             if clean_answer == "yes":
@@ -98,7 +96,16 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
     Uses GPT to extract project details from the article text in two rounds.
     Returns a dictionary with all keys. Missing details are returned as empty strings.
     """
-    tech_list_str = ", ".join(tech_list)
+    entries = []
+    for item in tech_list:
+        if isinstance(item, dict):
+            # each dict has exactly one key→value
+            for name, definition in item.items():
+                entries.append(f"{name}: {definition}")
+        else:
+            entries.append(str(item))
+
+    tech_list_str = "\n".join(entries)
     
     # --- First round: Core details ---
     core_prompt = (
@@ -106,8 +113,8 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
         "You may need to infer them:\n"
         "- scale: one of 'pilot', 'demonstration', or 'full scale'\n"
         "- project_name: the name of the project mentioned\n"
-        "- timeline: the year when it will be operative (skip if not explicitly stated)\n"
-        f"- technology: one of the following: {tech_list_str}\n\n"
+        "- timeline: the year to be online, NOT necessarily when operations will begin (skip if not explicitly stated)\n"
+        f"- technology: one of the following: {tech_list_str}\n\n. DO NOT select a technology if one is not mentioned in the article. If multiple are mentioned, feel free to list more than one, but ONLY if they are clearly being used in the same project."
         "Return your answer as a JSON object with keys: 'scale', 'project_name', 'timeline', 'technology'. "
         "For any missing detail, return an empty string.\n\n"
         "Article text:\n\"\"\"\n" + article_text + "\n\"\"\""

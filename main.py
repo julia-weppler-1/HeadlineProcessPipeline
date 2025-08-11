@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import datetime
 # Import functions from your modules
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
-from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details
+from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details, fetch_variable_info
 from src.results import output_results_excel, get_output_fname
 from src.questions import STEEL_NO, IRON_NO, CEMENT_NO, CEMENT_TECH, STEEL_IRON_TECH
 from src.ino_client_login import client_login
@@ -98,36 +98,69 @@ def run_pipeline():
             irrelevant_articles = []
             print("relevance_df", relevance_df)
             for _, row in relevance_df.iterrows():
-                article_row = headlines.loc[row["index"]]
-                # Clean up the title.
-                article_row["title"] = article_row["title"].split(" - ")[0].strip()
-                url = article_row["url"]
-                print("Row relevant?", article_row, row["relevant"])
-                if row["relevant"] != "no":
-                    full_text = fetch_full_article_text(article_row)
-                    if folder == "LeadIT-Cement":
-                        technologies = CEMENT_TECH
+                    article_row = headlines.loc[row["index"]]
+                    # Clean up the title.
+                    article_row["title"] = article_row["title"].split(" - ")[0].strip()
+                    url = article_row["url"]
+                    discard_reason = None  # ← track why something is skipped or degraded
+                    print("Row relevant?", article_row, row["relevant"])
+
+                    if row["relevant"] != "no":
+                        # Fetch full text with error handling, like in test.py
+                        try:
+                            full_text = fetch_full_article_text({"url": url})
+                            if full_text == "":
+                                discard_reason = "Failed to fetch text"
+                        except Exception as e:
+                            discard_reason = "source blocks web scraping bots"
+                            logger.error(f"Error fetching article from {url}: {e}")
+                            full_text = ""  # failed to fetch
+                        domain = folder.removeprefix("LeadIT-") if hasattr(str, "removeprefix") else (
+                            folder[7:] if folder.startswith("LeadIT-") else folder
+                        )
+                        # Intermediate gate: is it truly a project/plant/demo? (JSON yes/no)
+                        project_query = (
+                            f"Based on the article below, is this about a project, plant, or demonstration in {domain}?"
+                            "Does it mention a project, plant, or demonstration in green steel? This can include funding or contract/partnership updates."
+                            "and does it include some details about that project? "
+                            "Answer ONLY as JSON with exactly one key “answer” whose value is “yes” or “no”.\n\n"
+                            "Article text:\n\"\"\"\n" + full_text + "\n\"\"\""
+                        )
+                        resp = fetch_variable_info(openai_client, gpt_model, project_query, run_on_full_text=True)
+                        is_project = resp.get("answer", "").strip().lower() == "yes"
+
+                        if is_project:
+                            # Extract details only if it's truly a project article
+                            if folder == "LeadIT-Cement":
+                                technologies = CEMENT_TECH
+                            else:
+                                technologies = STEEL_IRON_TECH
+                            details = query_gpt_for_project_details(
+                                openai_client,
+                                gpt_model,
+                                full_text,
+                                technologies
+                            )
+                        else:
+                            details = {}
+                            if discard_reason is None:
+                                discard_reason = "This article did not seem to be about a green steel project."
+
+                        article_info = {
+                            "title": article_row["title"],
+                            "url": url,
+                            "full_text": full_text,
+                            "discard_reason": discard_reason,  # ← include reason in output
+                            **details
+                        }
+                        relevant_articles.append(article_info)
                     else:
-                        technologies = STEEL_IRON_TECH
-                    details = query_gpt_for_project_details(
-                        openai_client,
-                        gpt_model,
-                        full_text,
-                        technologies
-                    )
-                    article_info = {
-                        "title": article_row["title"],
-                        "url": url,
-                        "full_text": full_text,
-                        **details
-                    }
-                    relevant_articles.append(article_info)
-                else:
-                    # Collect the article as irrelevant.
-                    irrelevant_articles.append({
-                        "title": article_row["title"],
-                        "url": url
-                    })
+                        # Collect the article as irrelevant (keep reason field for consistency)
+                        irrelevant_articles.append({
+                            "title": article_row["title"],
+                            "url": url,
+                            "discard_reason": discard_reason
+                        })
 
             # Convert relevant articles to DataFrame.
             folder_df = pd.DataFrame(relevant_articles)

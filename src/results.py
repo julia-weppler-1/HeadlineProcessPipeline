@@ -57,44 +57,20 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
 
     # Define detailed columns for the Relevant Stage 2 sheet.
     detailed_cols = [
-        "Internal ID", 
-        "Justification",
-        "Project name",
-        "Project scale",
-        "Year to be online",
-        "Technology to be used",
-        "Company",
-        "Potential Partners",
-        "Company type",
-        "Project type",
-        "Company has climate goals?",
-        "Production plant",
-        "Updated GEM Plant ID",
-        "GEM wiki page link",
-        "Latitude",
-        "Longitude",
-        "Coordinate accuracy",
-        "Continent",
-        "Country",
-        "Iron production capacity (million tonnes per year)",
+        "Internal ID", "Justification", "Project name", "Project scale",
+        "Planned commissioning year", "Technology to be used", "Company",
+        "Potential Partners", "Company type", "Project type",
+        "Company has climate goals?", "Production plant", "Updated GEM Plant ID",
+        "GEM wiki page link", "Latitude", "Longitude", "Coordinate accuracy",
+        "Continent", "Country", "Iron production capacity (million tonnes per year)",
         "Steel production capacity (million tonnes per year)",
-        "States iron & steel capacity?",
-        "[ref] Iron or steel capacity",
-        "Hydrogen generation capacity (MW)",
-        "States CC & H2 capacity?",
-        "[ref] CC or H2 capacity",
-        "[ref] Investment",
-        "Business proposed",
-        "Project status",
-        "Year construction began",
-        "Actual start year",
-        "[ref] Date of announcement",
-        "Comments",
-        "Lastest project news (yyyy-mm-dd)",
-        "Lastly updated (yyyy-mm-dd)",
-        "References 1",
-        "Reference Article",
-        "Check Results" 
+        "States iron & steel capacity?", "[ref] Iron or steel capacity",
+        "Hydrogen generation capacity (MW)", "States CC & H2 capacity?",
+        "[ref] CC or H2 capacity", "[ref] Investment", "Business proposed",
+        "Project status", "Year construction began", "Actual start year",
+        "[ref] Date of announcement", "Comments",
+        "Lastest project news (yyyy-mm-dd)", "Lastly updated (yyyy-mm-dd)",
+        "References 1", "Reference Article", "Check Results"
     ]
 
     # First, filter out articles that have been flagged as irrelevant via the "irrelevant" key.
@@ -163,10 +139,14 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
     # Build DataFrame for "All Articles"
     all_articles = []
     for article in stage1_articles:
+        discarded = "Discarded before Stage 2"
+        if article.get("discard_reason"):
+            print("yup")
+            discarded += f" ({article['discard_reason']})"
         all_articles.append({
             "title": article.get("title", ""),
             "url": article.get("url", ""),
-            "Discarded": "Discarded before Stage 2"
+            "Discarded": discarded
         })
     for article in stage2_articles:
         all_articles.append({
@@ -197,3 +177,137 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path):
         return
     upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, output_fname, graph_access_token)
     buffer = io.BytesIO()
+
+# from datetime import datetime
+# import os
+# import pandas as pd
+# from src.validation import get_check_results_flag
+
+
+# def get_output_fname(folder, filetype="xlsx"):
+#     """
+#     Builds a filename of the form:
+#         results_{folder}_{YYYYMMDD_HHMMSS}.xlsx
+#     """
+#     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     filename = f"{folder}/results_{ts}.{filetype}"
+#     return filename
+
+
+# def output_metrics(doc, num_docs, t, num_pages, failed_pdfs):
+#     doc.add_heading(
+#         f"{num_docs} documents ({num_pages} total pages) processed in {t:.2f} seconds",
+#         4,
+#     )
+#     if len(failed_pdfs) > 0:
+#         doc.add_heading(f"Unable to process the following PDFs: {failed_pdfs}", 4)
+
+
+# def output_results_excel(relevant_articles, irrelevant_articles, output_path):
+#     """
+#     Writes the results into an Excel file with four worksheets:
+#       - 'Relevant Stage 1'
+#       - 'Relevant Stage 2'
+#       - 'Irrelevant'
+#       - 'All Articles'
+#     Saves directly to `output_path` on local disk.
+#     """
+#     # Convert inputs to list of dictionaries if they are DataFrames.
+#     if isinstance(relevant_articles, pd.DataFrame):
+#         relevant_articles = relevant_articles.to_dict("records")
+#     if isinstance(irrelevant_articles, pd.DataFrame):
+#         irrelevant_articles = irrelevant_articles.to_dict("records")
+
+#     # Columns
+#     simple_cols = ["title", "url"]
+#     detailed_cols = [
+#         "Internal ID", "Justification", "Project name", "Project scale",
+#         "Planned commissioning year", "Technology to be used", "Company",
+#         "Potential Partners", "Company type", "Project type",
+#         "Company has climate goals?", "Production plant", "Updated GEM Plant ID",
+#         "GEM wiki page link", "Latitude", "Longitude", "Coordinate accuracy",
+#         "Continent", "Country", "Iron production capacity (million tonnes per year)",
+#         "Steel production capacity (million tonnes per year)",
+#         "States iron & steel capacity?", "[ref] Iron or steel capacity",
+#         "Hydrogen generation capacity (MW)", "States CC & H2 capacity?",
+#         "[ref] CC or H2 capacity", "[ref] Investment", "Business proposed",
+#         "Project status", "Year construction began", "Actual start year",
+#         "[ref] Date of announcement", "Comments",
+#         "Lastest project news (yyyy-mm-dd)", "Lastly updated (yyyy-mm-dd)",
+#         "References 1", "Reference Article", "Check Results"
+#     ]
+
+#     # Filter out newly irrelevant
+#     newly_irrelevant = []
+#     filtered_relevant = []
+#     for art in relevant_articles:
+#         if art.get("irrelevant"):
+#             newly_irrelevant.append(art)
+#         else:
+#             filtered_relevant.append(art)
+#     irrelevant_articles.extend(newly_irrelevant)
+
+#     # Split into Stage 1 and Stage 2
+#     stage1, stage2 = [], []
+#     for art in filtered_relevant:
+#         if art.get("company", "").strip() and art.get("project_name", "").strip():
+#             stage2.append(art)
+#         else:
+#             stage1.append(art)
+
+#     # Build DataFrames
+#     df_stage1 = pd.DataFrame(stage1, columns=simple_cols)
+#     df_irrelevant = pd.DataFrame(irrelevant_articles, columns=simple_cols)
+
+#     def build_detailed_row(article):
+#         row = {c: "" for c in detailed_cols}
+#         row["Project name"] = article.get("project_name", "")
+#         row["Project scale"] = article.get("scale", "")
+#         row["Planned commissioning year"] = article.get("timeline", "")
+#         row["Technology to be used"] = article.get("technology", "")
+#         row["Company"] = article.get("company", "")
+#         row["Potential Partners"] = article.get("partners", "")
+#         row["Continent"] = article.get("continent", "")
+#         row["Country"] = article.get("country", "")
+#         row["Project status"] = article.get("project_status", "")
+#         row["Reference Article"] = article.get("title", "")
+#         row["References 1"] = article.get("url", "")
+#         if article.get("full_text"):
+#             core = {k: article.get(k, "") for k in ["project_name", "scale", "timeline", "technology"]}
+#             flag, _ = get_check_results_flag(core, article["full_text"])
+#             row["Check Results"] = flag
+#         return row
+
+#     detailed_rows = [build_detailed_row(a) for a in stage2]
+#     df_stage2 = pd.DataFrame(detailed_rows, columns=detailed_cols)
+
+#     # All Articles sheet
+#     all_art = []
+#     for art in stage1:
+#         discarded = "Discarded before Stage 2"
+#         if art.get("discard_reason"):
+#             print("yup")
+#             discarded += f" ({art['discard_reason']})"
+#         all_art.append({
+#             "title": art.get("title", ""),
+#             "url": art.get("url", ""),
+#             "Discarded": discarded
+#         })
+#     for art in stage2:
+#         all_art.append({"title": art.get("title", ""), "url": art.get("url", ""), "Discarded": ""})
+#     for art in irrelevant_articles:
+#         all_art.append({"title": art.get("title", ""), "url": art.get("url", ""), "Discarded": "Discarded before Stage 1"})
+#     df_all = pd.DataFrame(all_art, columns=["title", "url", "Discarded"])
+
+#     # Ensure output directory exists
+#     out_dir = os.path.dirname(output_path) or "."
+#     os.makedirs(out_dir, exist_ok=True)
+
+#     # Write directly to local file
+#     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+#         df_stage1.to_excel(writer, sheet_name="Relevant Stage 1", index=False)
+#         df_stage2.to_excel(writer, sheet_name="Relevant Stage 2", index=False)
+#         df_irrelevant.to_excel(writer, sheet_name="Irrelevant", index=False)
+#         df_all.to_excel(writer, sheet_name="All Articles", index=False)
+
+#     print(f"Results written to {output_path}")

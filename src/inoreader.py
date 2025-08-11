@@ -7,8 +7,10 @@ from playwright.sync_api import sync_playwright
 import os
 import datetime
 from dotenv import load_dotenv
-load_dotenv() 
+from requests.exceptions import HTTPError
+from newspaper import Article
 import requests
+load_dotenv() 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -100,16 +102,41 @@ def resolve_with_playwright(url):
         return final_url
 
 def fetch_full_article_text(row):
-    logging.info("Fetching article text for row with URL: %s", row.get("url"))
     real_url = row.get("url", "")
-    logging.info("Extracted final URL: %s", real_url)
+    logger = logging.getLogger(__name__)
+    logger.info(f"Fetching article text for URL: {real_url}")
+
+    # 1) Try a plain HTTP GET to check status
     try:
-        from newspaper import Article  # Move inside function if needed
-        article = Article(real_url)
-        article.download()
-        article.parse()
-        return article.text
+        resp = requests.get(real_url, timeout=15)
     except Exception as e:
-        logging.error("Error fetching article from %s: %s", real_url, e)
+        logger.error(f"Error fetching {real_url}: {e}")
         return ""
-    
+
+    # 2) If we got blocked, retry via Archive.org
+    if resp.status_code == 403:
+        archive_url = f"http://web.archive.org/web/{real_url}"
+        logger.info(f"403 detected—retrying via Archive.org: {archive_url}")
+        try:
+            resp = requests.get(archive_url, timeout=15)
+        except Exception as e:
+            logger.error(f"Error fetching archive URL {archive_url}: {e}")
+            return ""
+
+    # 3) Make sure we now have a 200
+    try:
+        resp.raise_for_status()
+    except Exception as e:
+        logger.error(f"Final fetch failed ({resp.status_code}): {e}")
+        return ""
+
+    # 4) Parse whatever HTML we got back
+    html = resp.text
+    article = Article(real_url)        # keeps metadata tied to original URL
+    article.set_html(html)
+    article.parse()
+
+    text = (article.text or "").strip()
+    if not text:
+        logger.warning("No text extracted after parsing HTML from %s", resp.url)
+    return text
