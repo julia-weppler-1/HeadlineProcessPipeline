@@ -3,6 +3,7 @@ name: Run Pipeline on Schedule
 on:
   schedule:
     - cron: '0 0 * * MON'
+  workflow_dispatch:
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
