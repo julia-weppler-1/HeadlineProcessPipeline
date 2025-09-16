@@ -31,13 +31,13 @@ STEEL_NO = [
     "Is this headline *only* reporting broad production capacity figures or targets (e.g. annual tonnage goals) without referencing a specific green-steel project, investment, or scale-up effort?",
     "Is this headline *only* about broad macroeconomic or trade policies (e.g. inflation, tariffs, costs, imports, exports) and *not* about a specific green-steel project’s financing, investment, or production activities?",
     "Is this headline about a metal product unrelated to steel, such as coal?",
-    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
-    "Is this headline about politics, national or international policy, trade, or warfare? If it is about a developing steel plant or technology, say no.",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector in a way that does not signify a potential new project in green iron/steel?",
     "Is this headline about politics, national or international policy, trade, or warfare? If it mentions fundraising, a developing steel plant or technology, or green-steel project, say no.",
     "Is this headline about an award or prize? If it is about an investment or grant for steel, say no.",
     "Is this headline only about general logistics (deliveries, shipping) or warnings/threats, without referring to a specific project partnership, green-hydrogen plant installation, or collaboration in green-steel/green-hydrogen initiatives?",
     "Is this headline a broad review or opinion piece?",
     "Is this headline about a government or international body's high-level CO₂ reduction targets or sourcing policies, *without* referring to a concrete green-steel production project?",
+    "Is this headline about a mining operation (e.g. a mine opening, expansion, closure or production restart)? If it’s about logistics or offtake agreements (deliveries, shipments, test consignments, pellet offtake, etc.) or any green-initiative (hydrogen partnerships, plant renovations, emission-reduction projects, etc.), answer no.",
     "Is the headline about the release of a company report or the financial/fiscal year (FY)?",
     "Is the headline about the ability to produce bars, or the amount of steel bars that can be produced?",
     "Determine whether this headline is **only** a generic corporate or market announcement with **no** concrete project details. \n **Project details** include any mention of: \n a manufacturing or steel-production operation (mine opening, plant expansion, closure, restart)  \n a technology or infrastructure deployment   \n a partnership, offtake or logistics agreement  \n a new initiative, mission statement, pilot program, or strategy rollout  \n a monetary figure indicating project funding (e.g. “$X million”, “€Y billion”). If the headline contains **any** project detail, answer: `{ 'answer': 'no' }`.  Otherwise answer `{ 'answer': 'yes' }`."
@@ -72,16 +72,16 @@ IRON_YES = [
 ]
 
 IRON_NO = [
-    "Is this headline about an announcement for a conference or forum, or related event?",
+    "Is this headline about an announcement for a conference or forum, or related event? Answer no if it is about a new project in green iron or steel that was announced, or an announced investment.",
     "Is this headline about sports, movies, fashion (like watches), food, or pop culture?",
     "Is the headline about new leadership in a company or a merge, acquisition, or consolidation? If it is about a collaboration, say no.",
     "Is this headline about iron or steel consumption? If it is explictly about a supply agreement, say no."
     "Is this headline about net profit or profit results of a company?",
     "Is this headline *only* reporting broad production capacity figures or targets (e.g. annual tonnage goals) without referencing a specific green-iron project, investment, or scale-up effort?",
     "Is this headline *only* about broad macroeconomic or trade policies (e.g. inflation, tariffs, costs, imports, exports) and *not* about a specific green-iron project’s financing, investment, or production activities?",
-    "Is this headline about a mining product unrelated to iron, such as coal?",
-    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
-    "Is this headline about politics, national or international policy, trade, or warfare?",
+    "Is this headline about a mining product unrelated to iron, steel, or hydrogen, such as coal?",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector in a way that does not signify a potential new project in green iron/steel?",
+    "Is this headline about politics, national or international policy, trade, or warfare? If it mentions fundraising, a developing steel/iron plant or technology, or green-iron project, say no.",
     "Is this headline about a government or international body's high-level CO₂ reduction targets or sourcing policies, *without* referring to a concrete green-iron production project?",
     "Is this headline about an award or prize? If it is about an investment or grant for iron, say no.",
     "Is this headline only about general logistics (deliveries, shipping) or warnings/threats, without referring to a specific project partnership, green-hydrogen plant installation, or collaboration in green-iron/green-hydrogen initiatives?",
@@ -94,7 +94,7 @@ IRON_NO = [
 
 
 CEMENT_NO = [
-    "Is this headline about an announcement for a conference or forum, or related event?",
+    "Is this headline about an announcement for a conference or forum, or related event? Answer no if it is about a new project in green cement that was announced, or an announced investment.",
     "Is this headline about sports, movies, fashion (like watches), food, or pop culture?",
     "Is the headline about new leadership in a company or a merge, acquisition, or consolidation? If it is about a collaboration, say no.",
     "Is this headline about net profit or profit results of a company?",
@@ -103,8 +103,8 @@ CEMENT_NO = [
     "Is this headline about the construction sector or construction, with no mention of cement innovations or projects?",
     "Does this headline explicitly mention consumption? If it is explictly about a supply agreement, say no.",
     "Is this headline *only* about broad macroeconomic or trade policies (e.g. inflation, tariffs, costs, imports, exports) and *not* about a specific green-cement project’s financing, investment, or production activities?",
-    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector?",
-    "Is this headline about politics, national or international policy, trade, or warfare?",
+    "Is this headline about stock market performances, layoffs or creating jobs, dividends, financial results, or commodity prices? Does it mention the words market or sector in a way that does not signify a potential new project in green cement?",
+    "Is this headline about politics, national or international policy, trade, or warfare? If it mentions fundraising, a developing cement plant or technology, or green-cement project, say no.",
     "Is this headline about an award or prize? If it is about an investment or grant for cement, say no. If it is about a certification or permission, say no.",
     "Is this headline only about general logistics (deliveries, shipping) or warnings/threats, without referring to a specific project partnership, green-hydrogen plant installation, or collaboration in green-cement/green-hydrogen initiatives?",
     "Is this headline an opinion piece? If it relates to green cement, green cement production, carbon capture/usage, or renewable energy sources, say no.",
