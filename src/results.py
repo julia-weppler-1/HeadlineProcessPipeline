@@ -205,6 +205,8 @@ from datetime import datetime
 import os
 import pandas as pd
 from src.validation import get_check_results_flag
+import io
+from src.onedrive import get_graph_api_token, upload_file_to_onedrive
 
 def get_output_fname(folder, filetype="xlsx"):
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -370,12 +372,45 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
         all_art.append({"title": art.get("title", ""), "url": art.get("url", ""), "Discarded": "Discarded before Stage 1"})
     df_all = pd.DataFrame(all_art, columns=["title", "url", "Discarded"])
 
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-
-    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
         df_stage1.to_excel(writer, sheet_name="Relevant Stage 1", index=False)
         df_stage2.to_excel(writer, sheet_name="Relevant Stage 2", index=False)
         df_irrelevant.to_excel(writer, sheet_name="Irrelevant", index=False)
         df_all.to_excel(writer, sheet_name="All Articles", index=False)
+    buf.seek(0)
+    file_bytes = buf.getvalue()
 
-    print(f"Results written to {output_path}")
+    # os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    # with open(output_path, "wb") as f:
+    #     f.write(file_bytes)
+    # print(f"Results written to {output_path}")
+
+    tenant_id = os.getenv("OD_TENANT_ID")
+    client_id = os.getenv("OD_CLIENT_ID")
+    client_secret = os.getenv("OD_CLIENT_VALUE")
+    drive_id = os.getenv("OD_DRIVE_ID")
+    parent_item_id = os.getenv("OD_PARENT_ITEM")
+
+    missing = [name for name, val in [
+        ("OD_TENANT_ID", tenant_id),
+        ("OD_CLIENT_ID", client_id),
+        ("OD_CLIENT_VALUE", client_secret),
+        ("OD_DRIVE_ID", drive_id),
+        ("OD_PARENT_ITEM", parent_item_id),
+    ] if not val]
+
+    if missing:
+        print(f"OneDrive upload skipped; missing env vars: {', '.join(missing)}")
+    else:
+        token = get_graph_api_token(tenant_id, client_id, client_secret)
+        if not token:
+            print("Could not obtain Graph API token; skipping OneDrive upload.")
+        else:
+            # Use just the filename when uploading into a known parent folder
+            upload_name = os.path.basename(output_path)
+            try:
+                upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, upload_name, token)
+                print(f"Results uploaded to OneDrive as {upload_name}")
+            except Exception as e:
+                print(f"OneDrive upload failed: {e}")
