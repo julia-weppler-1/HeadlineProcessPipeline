@@ -408,7 +408,7 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
             print("Could not obtain Graph API token; skipping OneDrive upload.")
         else:
             # Use just the filename when uploading into a known parent folder
-            upload_name = os.path.basename(output_path)
+            upload_name = output_path.replace("\\", "/").lstrip("/")
             try:
                 upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, upload_name, token)
                 print(f"Results uploaded to OneDrive as {upload_name}")
