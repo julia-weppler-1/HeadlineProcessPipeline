@@ -52,6 +52,112 @@ def fetch_variable_info(gpt_client, gpt_model, query, run_on_full_text):
     msgs = create_gpt_messages(query, run_on_full_text)
     return chat_gpt_query(gpt_client, gpt_model, msgs)
 
+def extract_numeric_facts_with_quotes(gpt_client, gpt_model, article_text: str, domain: str = "steel") -> dict:
+    """
+    Domain-aware extraction of numbers + supporting quotes.
+    steel/iron -> ask 5 questions
+    cement     -> ask 2 questions (investment + capture only)
+
+    ANSWER FIELDS: digits ok, but ALL units & currencies in plain English words.
+    QUOTE FIELDS: short verbatim substrings from the text.
+    """
+    domain = (domain or "").strip().lower()
+    is_cement = (domain == "cement")
+
+    if is_cement:
+        schema = (
+            "{\n"
+            '  "cc_capacity": "<value + units in plain English words or no response>",\n'
+            '  "cc_quote": "<short verbatim snippet>",\n'
+            '  "investment": "<value + currency in plain English words or no response>",\n'
+            '  "investment_quote": "<short verbatim snippet>"\n'
+            "}\n"
+        )
+        q_block = (
+            "1) What is the expected carbon capture capacity?\n"
+            "2) What is the investment size?\n"
+        )
+        keys = ["cc_capacity","cc_quote","investment","investment_quote"]
+    else:
+        schema = (
+            "{\n"
+            '  "cc_capacity": "<value + units in plain English words or no response>",\n'
+            '  "cc_quote": "<short verbatim snippet>",\n'
+            '  "h2_capacity": "<value + units in plain English words or no response>",\n'
+            '  "h2_quote": "<short verbatim snippet>",\n'
+            '  "investment": "<value + currency in plain English words or no response>",\n'
+            '  "investment_quote": "<short verbatim snippet>",\n'
+            '  "iron_capacity": "<value + units in plain English words or no response>",\n'
+            '  "iron_quote": "<short verbatim snippet>",\n'
+            '  "steel_capacity": "<value + units in plain English words or no response>",\n'
+            '  "steel_quote": "<short verbatim snippet>"\n'
+            "}\n"
+        )
+        q_block = (
+            "1) What is the expected carbon capture capacity?\n"
+            "2) What is the hydrogen generation capacity?\n"
+            "3) What is the investment size?\n"
+            "4) What is the iron production capacity?\n"
+            "5) What is the steel production capacity?\n"
+        )
+        keys = [
+            "cc_capacity","cc_quote",
+            "h2_capacity","h2_quote",
+            "investment","investment_quote",
+            "iron_capacity","iron_quote",
+            "steel_capacity","steel_quote",
+        ]
+
+    schema_prompt = (
+        "You are an extraction assistant. Using ONLY the text below, answer the following.\n"
+        "Return strict JSON with exactly these keys:\n" + schema + "\n"
+        "Formatting rules for ANSWERS (not quotes):\n"
+        "• Use digits for numbers, but write all UNITS and CURRENCIES in plain English words only.\n"
+        "• Do NOT use symbols or abbreviations (e.g., no €, $, £, ¥, MW, GW, Mt, kt, t/yr, tpa, MTPA, kWh).\n"
+        "• Examples: '4.5 billion US dollars', '200 megawatts', '2.5 million tonnes per year', '1.2 million tonnes of CO2 per year'.\n"
+        "• 'steel_capacity' is NOT the same as DRI output—do not confuse them.\n"
+        "• If you cannot find a value, set the answer field to exactly ''.\n\n"
+        "Quotes:\n"
+        "• The *_quote fields must be short verbatim substrings from the text that support the answer.\n"
+        "• Quotes may include the original symbols or abbreviations; do not rewrite quotes.\n\n"
+        "Questions:\n" + q_block +
+        "\nText:\n\"\"\"\n" + article_text + "\n\"\"\""
+    )
+
+    msgs = [
+        {"role": "system", "content": "Return strict JSON only. Follow rules exactly."},
+        {"role": "user", "content": schema_prompt},
+    ]
+    try:
+        resp = gpt_client.chat.completions.create(
+            model=gpt_model,
+            temperature=0,
+            response_format={"type": "json_object"},
+            messages=msgs,
+        )
+        out = resp.choices[0].message.content.strip()
+        data = json.loads(out)
+    except Exception as e:
+        print(f"Error extracting numeric facts: {e}")
+        data = {}
+
+    # normalize keys for this domain
+    for k in keys:
+        if k not in data or data[k] is None:
+            data[k] = ""
+
+    # fill missing answers
+    for ans_key in [k for k in keys if k.endswith("_capacity") or k == "investment"]:
+        if ans_key in data and not data[ans_key]:
+            data[ans_key] = ""
+
+    # clip quotes
+    import re as _re
+    for qk in [k for k in keys if k.endswith("_quote")]:
+        data[qk] = _re.sub(r"\s+", " ", (data[qk] or "")).strip()[:300]
+
+    return data
+
 def query_gpt_for_relevance_iterative(df, target_questions, run_on_full_text, gpt_client, gpt_model):
     """
     Iterates through target_questions for each article in df.
@@ -91,7 +197,7 @@ def query_gpt_for_relevance_iterative(df, target_questions, run_on_full_text, gp
     return pd.DataFrame(results)
 
 
-def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list):
+def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list, domain):
     """
     Uses GPT to extract project details from the article text in two rounds.
     Returns a dictionary with all keys. Missing details are returned as empty strings.
@@ -196,4 +302,11 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
         }
     
     combined_details = {**core_details, **additional_details}
+
+    try:
+        num = extract_numeric_facts_with_quotes(gpt_client, gpt_model, article_text, domain=domain)
+        combined_details.update(num) 
+    except Exception as e:
+        print(f"Numeric extraction error: {e}")
+
     return combined_details

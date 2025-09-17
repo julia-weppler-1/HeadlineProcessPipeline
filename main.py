@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import datetime
 # Import functions from your modules
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
-from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details, fetch_variable_info
+from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details, fetch_variable_info, extract_numeric_facts_with_quotes
 from src.results import output_results_excel, get_output_fname
 from src.questions import STEEL_NO, IRON_NO, CEMENT_NO, CEMENT_TECH, STEEL_IRON_TECH
 from src.ino_client_login import client_login
@@ -72,6 +72,7 @@ def run_pipeline():
 
         # Process each folder separately and save each result into its own Excel file.
         for folder, target_questions in folder_questions.items():
+            domain = folder.split("-")[-1].lower()
             logger.info("Processing folder: %s", folder)
             # Fetch headlines/articles for the folder.
             headlines = build_df_for_folder(folder, access_token)
@@ -139,8 +140,11 @@ def run_pipeline():
                                 openai_client,
                                 gpt_model,
                                 full_text,
-                                technologies
+                                technologies,
+                                domain
                             )
+                            facts = extract_numeric_facts_with_quotes(openai_client, gpt_model, full_text, domain=domain)
+                            details.update(facts)
                         else:
                             details = {}
                             if discard_reason is None:
@@ -170,7 +174,7 @@ def run_pipeline():
                 filetype="xlsx"
             )
             # Save the DataFrame to an Excel file using both lists.
-            output_results_excel(folder_df, irrelevant_articles, output_fname)
+            output_results_excel(folder_df, irrelevant_articles, output_fname, domain=domain)
         logger.info("Pipeline completed successfully.")
 
     except Exception as e:
