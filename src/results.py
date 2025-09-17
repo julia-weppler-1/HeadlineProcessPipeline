@@ -218,6 +218,9 @@ def output_metrics(doc, num_docs, t, num_pages, failed_pdfs):
     )
     if len(failed_pdfs) > 0:
         doc.add_heading(f"Unable to process the following PDFs: {failed_pdfs}", 4)
+def _nonempty_text(v):
+    v = _as_text(v)        
+    return bool(v)
 
 def _as_text(v):
     """Return '' for None/NaN; str for everything else."""
@@ -303,7 +306,7 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
     # split Stage 1 / Stage 2
     stage1, stage2 = [], []
     for art in filtered_relevant:
-        if art.get("company", "").strip() and art.get("project_name", "").strip():
+        if _nonempty_text(art.get("company")) and _nonempty_text(art.get("project_name")):
             stage2.append(art)
         else:
             stage1.append(art)
@@ -313,41 +316,44 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
 
     def build_detailed_row(article):
         row = {c: "" for c in detailed_cols}
+
         # core fields
-        row["Project name"] = article.get("project_name", "")
-        row["Project scale"] = article.get("scale", "")
-        row["Planned commissioning year"] = article.get("timeline", "")
-        row["Technology to be used"] = article.get("technology", "")
-        row["Company"] = article.get("company", "")
-        row["Potential Partners"] = article.get("partners", "")
-        row["Continent"] = article.get("continent", "")
-        row["Country"] = article.get("country", "")
-        row["Project status"] = article.get("project_status", "")
+        row["Project name"] = _as_text(article.get("project_name"))
+        row["Project scale"] = _as_text(article.get("scale"))
+        row["Planned commissioning year"] = _as_text(article.get("timeline"))
+        row["Technology to be used"] = _as_text(article.get("technology"))
+        row["Company"] = _as_text(article.get("company"))
+        row["Potential Partners"] = _as_text(article.get("partners"))
+        row["Continent"] = _as_text(article.get("continent"))
+        row["Country"] = _as_text(article.get("country"))
+        row["Project status"] = _as_text(article.get("project_status"))
 
         # references
-        row["Reference Article"] = article.get("title", "")
-        row["References 1"] = article.get("url", "")
+        row["Reference Article"] = _as_text(article.get("title"))
+        row["References 1"] = _as_text(article.get("url"))
 
         # numeric facts (domain-aware)
-        row["Expected CO2 capture capacity (plain English)"] = article.get("cc_capacity", "")
-        row["Capture quote(s)"] = article.get("cc_quote", "")
-        row["Investment size (plain English)"] = article.get("investment", "")
-        row["Investment quote(s)"] = article.get("investment_quote", "")
+        row["Expected CO2 capture capacity (plain English)"] = _as_text(article.get("cc_capacity"))
+        row["Capture quote(s)"] = _as_text(article.get("cc_quote"))
+        row["Investment size (plain English)"] = _as_text(article.get("investment"))
+        row["Investment quote(s)"] = _as_text(article.get("investment_quote"))
 
         if domain != "cement":
-            row["Hydrogen generation capacity (plain English)"] = article.get("h2_capacity", "")
-            row["Hydrogen quote(s)"] = article.get("h2_quote", "")
-            row["Iron production capacity (plain English)"] = article.get("iron_capacity", "")
-            row["Iron quote(s)"] = article.get("iron_quote", "")
-            row["Steel production capacity (plain English)"] = article.get("steel_capacity", "")
-            row["Steel quote(s)"] = article.get("steel_quote", "")
+            row["Hydrogen generation capacity (plain English)"] = _as_text(article.get("h2_capacity"))
+            row["Hydrogen quote(s)"] = _as_text(article.get("h2_quote"))
+            row["Iron production capacity (plain English)"] = _as_text(article.get("iron_capacity"))
+            row["Iron quote(s)"] = _as_text(article.get("iron_quote"))
+            row["Steel production capacity (plain English)"] = _as_text(article.get("steel_capacity"))
+            row["Steel quote(s)"] = _as_text(article.get("steel_quote"))
 
         # fuzzy check
-        if article.get("full_text"):
-            core = {k: article.get(k, "") for k in ["project_name", "scale", "timeline", "technology"]}
-            flag, _ = get_check_results_flag(core, article["full_text"])
+        full_text = article.get("full_text")
+        if _as_text(full_text):
+            core = {k: _as_text(article.get(k)) for k in ["project_name", "scale", "timeline", "technology"]}
+            flag, _ = get_check_results_flag(core, full_text)
             row["Check Results"] = flag
         return row
+
 
     df_stage2 = pd.DataFrame([build_detailed_row(a) for a in stage2], columns=detailed_cols)
 
