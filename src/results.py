@@ -266,7 +266,6 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
 
     simple_cols = ["title", "url"]
 
-    # --- Domain-specific Stage 2 columns ---
     common_cols = [
         "Internal ID", "Justification", "Project name", "Project scale",
         "Planned commissioning year", "Technology to be used", "Company",
@@ -401,16 +400,21 @@ def output_results_excel(relevant_articles, irrelevant_articles, output_path, do
     ] if not val]
 
     if missing:
-        print(f"OneDrive upload skipped; missing env vars: {', '.join(missing)}")
-    else:
-        token = get_graph_api_token(tenant_id, client_id, client_secret)
-        if not token:
-            print("Could not obtain Graph API token; skipping OneDrive upload.")
-        else:
-            # Use just the filename when uploading into a known parent folder
-            upload_name = output_path.replace("\\", "/").lstrip("/")
-            try:
-                upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, upload_name, token)
-                print(f"Results uploaded to OneDrive as {upload_name}")
-            except Exception as e:
-                print(f"OneDrive upload failed: {e}")
+            msg = f"OneDrive upload skipped; missing env vars: {', '.join(missing)}"
+            print(msg)
+            raise RuntimeError(msg)
+
+    token = get_graph_api_token(tenant_id, client_id, client_secret)
+    if not token:
+        msg = "Could not obtain Graph API token; skipping OneDrive upload."
+        print(msg)
+        raise RuntimeError(msg)
+
+    try:
+        upload_name = output_path.replace("\\", "/").lstrip("/")
+        upload_file_to_onedrive(file_bytes, drive_id, parent_item_id, upload_name, token)
+        print(f"Results uploaded to OneDrive as {upload_name}")
+    except Exception as e:
+        msg = f"OneDrive upload failed: {e}"
+        print(msg)
+        raise RuntimeError(msg)

@@ -4,6 +4,9 @@ import pandas as pd
 import string
 import json
 from src.questions import PROJECT_STATUS
+import logging
+
+logger = logging.getLogger(__name__)
 
 def new_openai_session(openai_apikey):
     os.environ["OPENAI_API_KEY"] = openai_apikey
@@ -184,7 +187,7 @@ def query_gpt_for_relevance_iterative(df, target_questions, run_on_full_text, gp
             clean_answer = raw_answer.strip().lower()
             if clean_answer not in ["yes", "no"]:
                 print(f"Warning: Unrecognized answer format '{clean_answer}' from GPT. Defaulting to 'no'.")
-                clean_answer = "yes"
+                clean_answer = "no"
             if clean_answer == "yes":
                 is_irrelevant = True
                 print("Skipping article due to query: ", query)
@@ -202,57 +205,86 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
     Uses GPT to extract project details from the article text in two rounds.
     Returns a dictionary with all keys. Missing details are returned as empty strings.
     """
+
+    def _parse_json_to_dict(raw: str, context: str) -> dict:
+        """Best-effort parse: handle code fences, list-wrapping, and non-dict outputs."""
+        try:
+            cleaned = raw.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[len("```json"):].strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned[3:].strip()
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3].strip()
+
+            parsed = json.loads(cleaned)
+
+            # If GPT gave a list, try to use the first dict element
+            if isinstance(parsed, list):
+                if parsed and isinstance(parsed[0], dict):
+                    return parsed[0]
+                else:
+                    logger.warning("JSON parsed as list but no dict element found (%s)", context)
+                    return {}
+            elif isinstance(parsed, dict):
+                return parsed
+            else:
+                logger.warning("JSON parsed as %s, expected dict (%s)", type(parsed), context)
+                return {}
+        except Exception as e:
+            logger.error("Failed to parse JSON for %s: %s\nRaw: %s", context, e, raw)
+            return {}
+
     entries = []
     for item in tech_list:
         if isinstance(item, dict):
-            # each dict has exactly one key→value
             for name, definition in item.items():
                 entries.append(f"{name}: {definition}")
         else:
             entries.append(str(item))
 
     tech_list_str = "\n".join(entries)
-    
-    # --- First round: Core details ---
+
     core_prompt = (
         "You are an information extraction assistant. Given the article text below, extract the following core details if available. "
         "You may need to infer them:\n"
         "- scale: one of 'pilot', 'demonstration', or 'full scale'\n"
         "- project_name: the name of the project mentioned\n"
         "- timeline: the year to be online, NOT necessarily when operations will begin (skip if not explicitly stated)\n"
-        f"- technology: one of the following: {tech_list_str}\n\n. DO NOT select a technology if one is not mentioned in the article. If multiple are mentioned, feel free to list more than one, but ONLY if they are clearly being used in the same project."
+        f"- technology: one of the following: {tech_list_str}\n\n"
+        "DO NOT select a technology if one is not mentioned in the article. If multiple are mentioned, you may list more than one, "
+        "but ONLY if they are clearly being used in the same project.\n"
         "Return your answer as a JSON object with keys: 'scale', 'project_name', 'timeline', 'technology'. "
         "For any missing detail, return an empty string.\n\n"
         "Article text:\n\"\"\"\n" + article_text + "\n\"\"\""
     )
-    
+
     msgs_core = [
         {"role": "system", "content": "You are an assistant that extracts project details from text."},
         {"role": "user", "content": core_prompt},
     ]
-    
+
     try:
         response_core = gpt_client.chat.completions.create(
             model=gpt_model,
             temperature=0,
             messages=msgs_core,
         )
-        output_core = response_core.choices[0].message.content.strip()
-        if output_core.startswith("```json"):
-            output_core = output_core[len("```json"):].strip()
-        if output_core.endswith("```"):
-            output_core = output_core[:-3].strip()
-        core_details = json.loads(output_core)
+        output_core = response_core.choices[0].message.content or ""
     except Exception as e:
-        print(f"Error extracting core project details: {e}")
-        core_details = {}
-    
-    for key in ['scale', 'project_name', 'timeline', 'technology']:
-        if key not in core_details:
+        logger.error("Error calling GPT for core project details: %s", e)
+        output_core = ""
+
+    core_details = _parse_json_to_dict(output_core, context="core_details")
+
+    # Ensure required keys exist
+    for key in ["scale", "project_name", "timeline", "technology"]:
+        if not isinstance(core_details, dict):
+            core_details = {}
+        if key not in core_details or core_details[key] is None:
             core_details[key] = ""
-    
-    # --- Second round: Additional details ---
-    if any(core_details[key] for key in ['scale', 'project_name', 'timeline', 'technology']):
+
+    if any(core_details.get(k, "") for k in ["scale", "project_name", "timeline", "technology"]):
         additional_prompt = (
             "You are an assistant that extracts additional project details from text. Given the article text below, "
             "extract the following details if available, inferring when necessary:\n"
@@ -262,51 +294,53 @@ def query_gpt_for_project_details(gpt_client, gpt_model, article_text, tech_list
             "- continent: the continent where the project is located\n"
             "- country: the country where the project is located\n"
             f"- project_status: one of the following statuses: {', '.join(PROJECT_STATUS)}\n\n"
-            "Return your answer as a JSON object with keys: 'company', 'projects mentioned', 'partners', 'continent', 'country', 'project_status'. "
+            "Return your answer as a JSON object with keys: 'company', 'projects mentioned', 'partners', "
+            "'continent', 'country', 'project_status'. "
             "For any missing detail, return an empty string.\n\n"
             "Article text:\n\"\"\"\n" + article_text + "\n\"\"\""
         )
-        
+
         msgs_additional = [
             {"role": "system", "content": "You are an assistant that extracts additional project details from text."},
             {"role": "user", "content": additional_prompt},
         ]
-        
+
         try:
             response_additional = gpt_client.chat.completions.create(
                 model=gpt_model,
                 temperature=0,
                 messages=msgs_additional,
             )
-            output_additional = response_additional.choices[0].message.content.strip()
-            if output_additional.startswith("```json"):
-                output_additional = output_additional[len("```json"):].strip()
-            if output_additional.endswith("```"):
-                output_additional = output_additional[:-3].strip()
-            additional_details = json.loads(output_additional)
+            output_additional = response_additional.choices[0].message.content or ""
         except Exception as e:
-            print(f"Error extracting additional project details: {e}")
+            logger.error("Error calling GPT for additional project details: %s", e)
+            output_additional = ""
+
+        additional_details = _parse_json_to_dict(output_additional, context="additional_details")
+
+        if not isinstance(additional_details, dict):
             additional_details = {}
-        
-        for key in ['company', 'partners', 'continent', 'country', 'project_status']:
-            if key not in additional_details:
+
+        for key in ["company", "projects mentioned", "partners", "continent", "country", "project_status"]:
+            if key not in additional_details or additional_details[key] is None:
                 additional_details[key] = ""
     else:
         additional_details = {
-            'company': "",
-            'projects mentioned': "",
-            'partners': "",
-            'continent': "",
-            'country': "",
-            'project_status': ""
+            "company": "",
+            "projects mentioned": "",
+            "partners": "",
+            "continent": "",
+            "country": "",
+            "project_status": "",
         }
-    
+
     combined_details = {**core_details, **additional_details}
 
     try:
         num = extract_numeric_facts_with_quotes(gpt_client, gpt_model, article_text, domain=domain)
-        combined_details.update(num) 
+        combined_details.update(num)
     except Exception as e:
-        print(f"Numeric extraction error: {e}")
+        logger.error("Numeric extraction error: %s", e)
 
     return combined_details
+

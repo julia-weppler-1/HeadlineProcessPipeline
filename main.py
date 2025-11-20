@@ -5,7 +5,6 @@ import traceback
 import pandas as pd
 from dotenv import load_dotenv
 import datetime
-# Import functions from your modules
 from src.inoreader import build_df_for_folder, fetch_full_article_text, resolve_with_playwright
 from src.query_gpt import new_openai_session, query_gpt_for_relevance_iterative, query_gpt_for_project_details, fetch_variable_info, extract_numeric_facts_with_quotes
 from src.results import output_results_excel, get_output_fname
@@ -52,134 +51,167 @@ def obtain_inoreader_token():
 
 def run_pipeline():
     logger.info("Pipeline started.")
-    try:
-        # Step 1: Get a valid token (or perform OAuth flow if needed).
-        openai_key = os.getenv("OPENAI_APIKEY")
-        access_token = obtain_inoreader_token()
-        if not access_token:
-            logger.error("Could not obtain a valid Inoreader access token. Exiting pipeline.")
-            return
+    openai_key = os.getenv("OPENAI_APIKEY")
 
-        # Define a mapping from folder names to their target questions.
-        folder_questions = {
-            "LeadIT-Cement": CEMENT_NO,
-            "LeadIT-Iron": IRON_NO,
-            "LeadIT-Steel": STEEL_NO,
-        }
+    # Step 1: Get a valid token.
+    access_token = obtain_inoreader_token()
+    if not access_token:
+        raise RuntimeError("Could not obtain a valid Inoreader access token.")
 
-        # Create a GPT session.
-        openai_client, gpt_model, _ = new_openai_session(openai_key)
+    folder_questions = {
+        "LeadIT-Cement": CEMENT_NO,
+        "LeadIT-Iron": IRON_NO,
+        "LeadIT-Steel": STEEL_NO,
+    }
 
-        # Process each folder separately and save each result into its own Excel file.
-        for folder, target_questions in folder_questions.items():
-            domain = folder.split("-")[-1].lower()
-            logger.info("Processing folder: %s", folder)
-            # Fetch headlines/articles for the folder.
+    # Create GPT client
+    openai_client, gpt_model, _ = new_openai_session(openai_key)
+
+    any_folder_failed = False
+
+    for folder, target_questions in folder_questions.items():
+        domain = folder.split("-")[-1].lower()
+        logger.info("Processing folder: %s", folder)
+
+        try:
             headlines = build_df_for_folder(folder, access_token)
             logger.info("Fetched %d headlines from folder %s.", len(headlines), folder)
+
             if headlines.empty:
                 logger.error("No headlines fetched for folder: %s", folder)
+                # Treat this as a failure for alerting, but continue to other folders
+                any_folder_failed = True
                 continue
 
-            # Resolve URLs and add a text column.
             headlines["url"] = headlines["url"].apply(resolve_with_playwright)
             headlines["text_column"] = headlines["title"] + " " + headlines.get("summary", "")
 
-            # Query GPT for relevance.
             relevance_df = query_gpt_for_relevance_iterative(
                 df=headlines,
                 target_questions=target_questions,
                 run_on_full_text=True,
                 gpt_client=openai_client,
-                gpt_model=gpt_model
+                gpt_model=gpt_model,
             )
 
-            # Build two lists: one for relevant articles, one for irrelevant ones.
             relevant_articles = []
             irrelevant_articles = []
-            print("relevance_df", relevance_df)
-            for _, row in relevance_df.iterrows():
-                    article_row = headlines.loc[row["index"]]
-                    # Clean up the title.
-                    article_row["title"] = article_row["title"].split(" - ")[0].strip()
-                    url = article_row["url"]
-                    discard_reason = None  # ← track why something is skipped or degraded
-                    print("Row relevant?", article_row, row["relevant"])
 
+            for _, row in relevance_df.iterrows():
+                article_row = headlines.loc[row["index"]].copy()
+                article_row["title"] = article_row["title"].split(" - ")[0].strip()
+                url = article_row["url"]
+                discard_reason = None
+
+                try:
                     if row["relevant"] != "no":
-                        # Fetch full text with error handling, like in test.py
+                        # Fetch full text
                         try:
                             full_text = fetch_full_article_text({"url": url})
                             if full_text == "":
                                 discard_reason = "Failed to fetch text"
                         except Exception as e:
                             discard_reason = "source blocks web scraping bots"
-                            logger.error(f"Error fetching article from {url}: {e}")
-                            full_text = ""  # failed to fetch
-                        domain = folder.removeprefix("LeadIT-") if hasattr(str, "removeprefix") else (
+                            logger.error("Error fetching article from %s: %s", url, e)
+                            full_text = ""
+
+                        domain_local = folder.removeprefix("LeadIT-") if hasattr(str, "removeprefix") else (
                             folder[7:] if folder.startswith("LeadIT-") else folder
                         )
-                        # Intermediate gate: is it truly a project/plant/demo? (JSON yes/no)
+
                         project_query = (
-                            f"Based on the article below, is this about a project, plant, or demonstration in {domain}?"
-                            f"Does it mention a project, plant, or demonstration in green {domain}? This can include funding or contract/partnership updates."
-                            "and does it include some details about that project? "
+                            f"Based on the article below, is this about a project, plant, or demonstration in {domain_local}? "
+                            f"Does it mention a project, plant, or demonstration in green {domain_local}? "
+                            "This can include funding or contract/partnership updates and does it include some details about that project? "
                             "Answer ONLY as JSON with exactly one key “answer” whose value is “yes” or “no”.\n\n"
                             "Article text:\n\"\"\"\n" + full_text + "\n\"\"\""
                         )
-                        resp = fetch_variable_info(openai_client, gpt_model, project_query, run_on_full_text=True)
-                        is_project = resp.get("answer", "").strip().lower() == "yes"
+
+                        try:
+                            resp = fetch_variable_info(openai_client, gpt_model, project_query, run_on_full_text=True)
+                            is_project = resp.get("answer", "").strip().lower() == "yes"
+                        except Exception as e:
+                            logger.exception("Project yes/no gate failed for %s: %s", url, e)
+                            is_project = False
+                            if discard_reason is None:
+                                discard_reason = f"Project classification failed: {e}"
 
                         if is_project:
-                            # Extract details only if it's truly a project article
                             if folder == "LeadIT-Cement":
                                 technologies = CEMENT_TECH
                             else:
                                 technologies = STEEL_IRON_TECH
-                            details = query_gpt_for_project_details(
-                                openai_client,
-                                gpt_model,
-                                full_text,
-                                technologies,
-                                domain
-                            )
-                            facts = extract_numeric_facts_with_quotes(openai_client, gpt_model, full_text, domain=domain)
-                            details.update(facts)
+
+                            try:
+                                details = query_gpt_for_project_details(
+                                    openai_client,
+                                    gpt_model,
+                                    full_text,
+                                    technologies,
+                                    domain_local,
+                                )
+                            except Exception as e:
+                                logger.exception("Project detail extraction failed for %s: %s", url, e)
+                                details = {}
+                                if discard_reason is None:
+                                    discard_reason = f"Project detail extraction failed: {e}"
+
                         else:
                             details = {}
                             if discard_reason is None:
-                                discard_reason = f"This article did not seem to be about a green {domain} project."
+                                discard_reason = f"This article did not seem to be about a green {domain_local} project."
 
                         article_info = {
                             "title": article_row["title"],
                             "url": url,
                             "full_text": full_text,
-                            "discard_reason": discard_reason,  # ← include reason in output
-                            **details
+                            "discard_reason": discard_reason,
+                            **details,
                         }
                         relevant_articles.append(article_info)
-                    else:
-                        # Collect the article as irrelevant (keep reason field for consistency)
-                        irrelevant_articles.append({
-                            "title": article_row["title"],
-                            "url": url,
-                            "discard_reason": discard_reason
-                        })
 
-            # Convert relevant articles to DataFrame.
+                    else:
+                        irrelevant_articles.append(
+                            {
+                                "title": article_row["title"],
+                                "url": url,
+                                "discard_reason": discard_reason,
+                            }
+                        )
+
+                except Exception as article_exc:
+                    # One article is bad; log & move on
+                    logger.exception(
+                        "Error processing article '%s' in folder %s: %s",
+                        article_row.get("title", "Unknown Title"),
+                        folder,
+                        article_exc,
+                    )
+                    irrelevant_articles.append(
+                        {
+                            "title": article_row.get("title", "Unknown Title"),
+                            "url": url,
+                            "discard_reason": f"Pipeline error: {article_exc}",
+                        }
+                    )
+
             folder_df = pd.DataFrame(relevant_articles)
-            # Build an output filename for this folder.
-            output_fname = get_output_fname(
-                folder,
-                filetype="xlsx"
-            )
-            # Save the DataFrame to an Excel file using both lists.
+            output_fname = get_output_fname(folder, filetype="xlsx")
             output_results_excel(folder_df, irrelevant_articles, output_fname, domain=domain)
+
+        except Exception as folder_exc:
+            any_folder_failed = True
+            logger.exception("Folder %s failed: %s", folder, folder_exc)
+
+    if any_folder_failed:
+        # This makes the overall pipeline fail in CI while still producing partial outputs.
+        raise RuntimeError("One or more folders failed. See logs for details.")
+    else:
         logger.info("Pipeline completed successfully.")
 
-    except Exception as e:
-        logger.error("An error occurred: %s", traceback.format_exc())
-        return
-
 if __name__ == "__main__":
-    run_pipeline()
+    try:
+        run_pipeline()
+    except Exception:
+        logger.exception("Pipeline failed.")
+        raise
