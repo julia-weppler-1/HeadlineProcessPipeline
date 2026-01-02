@@ -28,12 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Quick env‑check 🕵️‍♀️
-        run: |
-          echo "USERNAME present?    ${USERNAME:+yes}"
-          echo "PASSWORD present?    ${PASSWORD:+yes}"
-          echo "TOKEN_URL present?   ${TOKEN_URL:+yes}"
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
